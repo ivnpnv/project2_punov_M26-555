@@ -8,7 +8,7 @@
 Для запуска нужны Python 3.12 и uv. В Bash из папки проекта:
 
 uv sync
-uv run project
+uv run database
 
 
 После запуска вводим команды в самой программе. Например, создадим
@@ -43,3 +43,13 @@ uv run project
 
 uv run ruff check .
 uv build
+
+## Установка собранного пакета
+
+uv tool install --force dist/primitive_db-0.1.0-py3-none-any.whl
+database
+
+## Пример работы
+Установка пакета, запуск и работа с таблицей:
+https://asciinema.org/a/4N3TBdcAlktFLjdo
+
