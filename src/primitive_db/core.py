@@ -1,6 +1,18 @@
+import json
+from copy import deepcopy
+
+from primitive_db.decorators import (
+    confirm_action,
+    create_cacher,
+    handle_db_errors,
+    log_time,
+)
 from primitive_db.utils import load_table_data
 
+select_cache = create_cacher()
 
+
+@handle_db_errors
 def create_table(metadata, table_name, columns):
     if not table_name.isidentifier():
         raise ValueError(f"Некорректное имя таблицы: {table_name}.")
@@ -37,6 +49,8 @@ def create_table(metadata, table_name, columns):
     return metadata
 
 
+@handle_db_errors
+@confirm_action("удаление таблицы")
 def drop_table(metadata, table_name):
     if table_name not in metadata:
         raise ValueError(f'Таблица "{table_name}" не существует.')
@@ -45,6 +59,8 @@ def drop_table(metadata, table_name):
     return metadata
 
 
+@handle_db_errors
+@log_time
 def insert(metadata, table_name, values):
     if table_name not in metadata:
         raise ValueError(f'Таблица "{table_name}" не существует.')
@@ -83,25 +99,36 @@ def matches_where(record, where_clause):
     return True
 
 
+@handle_db_errors
+@log_time
 def select(table_data, where_clause=None):
-    if where_clause is None:
-        return table_data
+    key = json.dumps([table_data, where_clause], sort_keys=True)
 
-    selected_rows = []
+    def get_result():
+        if where_clause is None:
+            return deepcopy(table_data)
+
+        selected_rows = []
+        for row in table_data:
+            if matches_where(row, where_clause):
+                selected_rows.append(row)
+
+        return deepcopy(selected_rows)
+
+    return deepcopy(select_cache(key, get_result))
+
+
+@handle_db_errors
+def update(table_data, set_clause, where_clause):
     for row in table_data:
         if matches_where(row, where_clause):
-            selected_rows.append(row)
-
-    return selected_rows
-
-
-def update(table_data, set_clause, where_clause):
-    for row in select(table_data, where_clause):
-        row.update(set_clause)
+            row.update(set_clause)
 
     return table_data
 
 
+@handle_db_errors
+@confirm_action("удаление записей")
 def delete(table_data, where_clause):
     remaining_rows = []
     for row in table_data:

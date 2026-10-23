@@ -93,6 +93,8 @@ def run():
 
                 table_name = args[1]
                 metadata = create_table(metadata, table_name, args[2:])
+                if metadata is None:
+                    continue
                 save_table_data(table_name, [])
                 save_metadata(filepath, metadata)
                 columns = ", ".join(metadata[table_name])
@@ -107,6 +109,8 @@ def run():
 
                 table_name = args[1]
                 metadata = drop_table(metadata, table_name)
+                if metadata is None:
+                    continue
                 save_metadata(filepath, metadata)
                 print(f'Таблица "{table_name}" успешно удалена.')
 
@@ -123,9 +127,10 @@ def run():
                     )
 
                 table_name = args[2]
-                get_table_data(metadata, table_name)
                 values = parse_values(" ".join(args[5:-1]))
                 table_data = insert(metadata, table_name, values)
+                if table_data is None:
+                    continue
                 save_table_data(table_name, table_data)
                 record_id = table_data[-1]["ID"]
                 print(
@@ -146,6 +151,8 @@ def run():
                     where_clause = parse_where(" ".join(args[4:]))
                     validate_clause(metadata[table_name], where_clause)
                 rows = select(table_data, where_clause)
+                if rows is None:
+                    continue
                 print_rows(metadata[table_name], rows)
 
             elif command == "update":
@@ -164,7 +171,11 @@ def run():
                 if "ID" in set_clause:
                     raise ValueError("ID назначается автоматически и не изменяется.")
                 matched_rows = select(table_data, where_clause)
+                if matched_rows is None:
+                    continue
                 table_data = update(table_data, set_clause, where_clause)
+                if table_data is None:
+                    continue
                 save_table_data(table_name, table_data)
                 if not matched_rows:
                     print("Подходящих записей нет.")
@@ -183,7 +194,11 @@ def run():
                 where_clause = parse_where(" ".join(args[4:]))
                 validate_clause(metadata[table_name], where_clause)
                 matched_rows = select(table_data, where_clause)
+                if matched_rows is None:
+                    continue
                 table_data = delete(table_data, where_clause)
+                if table_data is None:
+                    continue
                 save_table_data(table_name, table_data)
                 if not matched_rows:
                     print("Подходящих записей нет.")
